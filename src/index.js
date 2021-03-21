@@ -10,19 +10,66 @@ app.use(cors());
 const users = [];
 
 function checksExistsUserAccount(request, response, next) {
-  // Complete aqui
+  const { username } = request.headers;
+
+  if(users.some((user) => user.username === username)){
+    const user = users.find((user) => user.username === username);
+    request.user = user;
+    next();
+  }else{
+    return response.status(404).json({error: 'User not found.'});  
+  }
 }
 
 function checksCreateTodosUserAvailability(request, response, next) {
-  // Complete aqui
+  const user = request.user;
+  if((user.pro == false && user.todos.length < 10) || user.pro == true){
+    next();
+  }else{
+    return response.status(403).json({ message: "Free plan limit reached. Upgrade your account to the pro plan to be able to register more todos." });
+  }
 }
 
 function checksTodoExists(request, response, next) {
-  // Complete aqui
+  const { username } = request.headers;
+  const { id } = request.params;
+  const userExists = users.some((user) => user.username === username)
+
+  if(!validate(id)){
+    return response.status(400).json({error: 'The given id is an invalid uuidv4.'});  
+  }
+  
+  if(userExists){
+    const user = users.find((user) => user.username === username);
+    if(user.todos.some((todo) => todo.id === id)){
+      const todo = user.todos.find((todo) => todo.id === id);
+      request.todo = todo;
+      request.user = user;
+    }else{
+      return response.status(404).json({error: 'Todo not found.'}); 
+    }
+  }else{
+    return response.status(404).json({error: 'User not found.'}); 
+  }
+
+  next();
+
 }
 
 function findUserById(request, response, next) {
-  // Complete aqui
+  const { id } = request.params;
+
+  if(!validate(id)){
+    return response.status(400).send();  
+  }
+
+  if(users.some((user) => user.id === id)){
+    const user = users.find((user) => user.id === id);
+    request.user = user;
+    next();
+  }else{
+    return response.status(404).json({error: "User not found."});  
+  }
 }
 
 app.post('/users', (request, response) => {
